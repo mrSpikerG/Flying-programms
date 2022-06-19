@@ -1,4 +1,7 @@
 ﻿
+using MaterialSkin.Controls;
+using System.Windows.Forms;
+
 namespace EnvironmentLesson
 {
     partial class AppControl
@@ -30,7 +33,7 @@ namespace EnvironmentLesson
         private void InitializeComponent()
         {
             this.panel1 = new System.Windows.Forms.Panel();
-            this.label1 = new System.Windows.Forms.Label();
+            this.label1 = new Label();
             this.SuspendLayout();
             // 
             // panel1
@@ -45,9 +48,14 @@ namespace EnvironmentLesson
             // label1
             // 
             this.label1.AutoSize = true;
+            this.label1.BackColor = System.Drawing.Color.Transparent;
+           // this.label1.Depth = 0;
+            this.label1.Font = new System.Drawing.Font("Roboto", 11F);
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.label1.Location = new System.Drawing.Point(3, 40);
+            //this.label1.MouseState = MaterialSkin.MouseState.HOVER;
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(51, 20);
+            this.label1.Size = new System.Drawing.Size(70, 27);
             this.label1.TabIndex = 0;
             this.label1.Text = "label1";
             // 
@@ -60,7 +68,7 @@ namespace EnvironmentLesson
             this.Controls.Add(this.label1);
             this.Controls.Add(this.panel1);
             this.Name = "AppControl";
-            this.Size = new System.Drawing.Size(57, 80);
+            this.Size = new System.Drawing.Size(76, 67);
             this.Load += new System.EventHandler(this.AppControl_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -69,7 +77,7 @@ namespace EnvironmentLesson
 
         #endregion
 
-        public System.Windows.Forms.Panel panel1;
-        public System.Windows.Forms.Label label1;
+        public Panel panel1;
+        public Label label1;
     }
 }

